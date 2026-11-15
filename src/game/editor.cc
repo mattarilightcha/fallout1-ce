@@ -39,10 +39,22 @@
 #include "plib/gnw/rect.h"
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
+#include "plib/gnw/jtext.h"
 
 namespace fallout {
 
 #define RENDER_ALL_STATS 7
+
+// nettoge.com: the editor's frames, buttons and hit boxes were laid out for
+// the 10 px font 101. The Japanese font is 12 px with an 11 px glyph box, so
+// the lists step by fixed amounts instead of text_height():
+// ED_ROW  = the old text_height() + 1, for lists tied to rows in the art
+//           (skills, the perks/karma/kills folder),
+// ED_ROW3 = the old text_height() + 3 (status and derived stats panels),
+// ED_LINE = 12 px rows where the frame has room (level box, perk dialog).
+#define ED_ROW 11
+#define ED_ROW3 13
+#define ED_LINE 12
 
 #define EDITOR_WINDOW_WIDTH 640
 #define EDITOR_WINDOW_HEIGHT 480
@@ -816,7 +828,7 @@ static int CharEditStart()
 
     text_font(101);
 
-    slider_y = skill_cursor * (text_height() + 1) + 27;
+    slider_y = skill_cursor * ED_ROW + 27; // nettoge.com: fixed row
 
     // skills
     skill_get_tags(temp_tag_skill, NUM_TAGGED_SKILLS);
@@ -1494,10 +1506,16 @@ int get_input_str(int win, int cancelKeyCode, char* text, int maxLength, int x, 
         } else {
             if ((keyCode == KEY_DELETE || keyCode == KEY_BACKSPACE) && nameLength >= 1) {
                 buf_fill(windowBuffer + windowWidth * y + x, text_width(copy), v60, windowWidth, backgroundColor);
-                copy[nameLength - 1] = ' ';
-                copy[nameLength] = '\0';
+                // nettoge.com: remove a whole UTF-8 character (Japanese premade
+                // names), not just its last byte.
+                int drop = 1;
+                while (drop < nameLength && ((unsigned char)copy[nameLength - drop] & 0xC0) == 0x80) {
+                    drop++;
+                }
+                copy[nameLength - drop] = ' ';
+                copy[nameLength - drop + 1] = '\0';
                 text_to_buf(windowBuffer + windowWidth * y + x, copy, windowWidth, windowWidth, textColor);
-                nameLength--;
+                nameLength -= drop;
 
                 win_draw(win);
             } else if ((keyCode >= KEY_FIRST_INPUT_CHARACTER && keyCode <= KEY_LAST_INPUT_CHARACTER) && nameLength < maxLength) {
@@ -1605,6 +1623,8 @@ static void DrawFolder()
     buf_to_buf(bckgnd + (360 * 640) + 34, 280, 120, 640, win_buf + (360 * 640) + 34, 640);
 
     text_font(101);
+    // nettoge.com: 11 px rows fixed by the art, 10 px glyphs (see jtext_small).
+    jtext_small(true);
 
     switch (folder) {
     case EDITOR_FOLDER_PERKS:
@@ -1650,7 +1670,7 @@ static void DrawFolder()
                     640,
                     color);
 
-                y += 1 + text_height();
+                y += ED_ROW; // nettoge.com: fixed row
             }
         }
 
@@ -1658,7 +1678,7 @@ static void DrawFolder()
             debug_printf("\n ** To many perks! %d total **\n", count);
         }
 
-        y = 362 + 7 * (text_height() + 1);
+        y = 362 + 7 * ED_ROW; // nettoge.com: fixed row
         v2 = text_width(getmsg(&editor_message_file, &mesg, 156));
         v3 = (280 - v2) / 2 + 34;
         v4 = (246 - v2) / 2;
@@ -1683,7 +1703,7 @@ static void DrawFolder()
             y + text_height() / 2,
             colorTable[992]);
 
-        y += 1 + text_height();
+        y += ED_ROW; // nettoge.com: fixed row
         if (temp_trait[0] != -1) {
             if (selected_perk_line == 8) {
                 color = colorTable[32747];
@@ -1696,7 +1716,7 @@ static void DrawFolder()
                 640,
                 640, color);
 
-            y += 1 + text_height();
+            y += ED_ROW; // nettoge.com: fixed row
         }
 
         if (temp_trait[1] != -1) {
@@ -1734,6 +1754,7 @@ static void DrawFolder()
         debug_printf("\n ** Unknown folder type! **\n");
         break;
     }
+    jtext_small(false); // nettoge.com
 }
 
 // 0x42E434
@@ -1785,7 +1806,7 @@ static int ListKills()
             640,
             color);
 
-        y += 1 + text_height();
+        y += ED_ROW; // nettoge.com: fixed row
     }
 
     if (count - 10 > 0) {
@@ -1809,7 +1830,7 @@ static int ListKills()
                 640,
                 color);
 
-            y += 1 + text_height();
+            y += ED_ROW; // nettoge.com: fixed row
         }
     }
 
@@ -1941,7 +1962,8 @@ static void PrintLevelWin()
 
     text_font(101);
 
-    buf_to_buf(bckgnd + 640 * 280 + 32, 124, 32, 640, win_buf + 640 * 280 + 32, 640);
+    // nettoge.com: three 12 px rows need 36 px.
+    buf_to_buf(bckgnd + 640 * 280 + 32, 124, 36, 640, win_buf + 640 * 280 + 32, 640);
 
     // LEVEL
     y = 280;
@@ -1958,7 +1980,7 @@ static void PrintLevelWin()
     text_to_buf(win_buf + 640 * y + 32, stringBuffer, 640, 640, color);
 
     // EXPERIENCE
-    y += text_height() + 1;
+    y += ED_LINE; // nettoge.com: 12 px rows
     if (info_line != 8) {
         color = colorTable[992];
     } else {
@@ -1972,7 +1994,7 @@ static void PrintLevelWin()
     text_to_buf(win_buf + 640 * y + 32, stringBuffer, 640, 640, color);
 
     // EXP NEEDED TO NEXT LEVEL
-    y += text_height() + 1;
+    y += ED_LINE; // nettoge.com: 12 px rows
     if (info_line != 9) {
         color = colorTable[992];
     } else {
@@ -2136,30 +2158,50 @@ static void PrintBigname()
     str = critter_name(obj_dude);
     strcpy(text, str);
 
+    // nettoge.com: the name may be UTF-8 (Japanese premade names). Cut it at
+    // whole characters, never inside a multi-byte sequence, and treat the
+    // katakana middle dot (U+30FB, E3 83 BB) as a word break like ' '.
     if (text_width(text) > 100) {
+        char* sep = NULL;
         pch = text;
         has_space = false;
         while (*pch != '\0') {
-            tmp = *pch;
-            *pch = '\0';
-            if (tmp == ' ') {
-                has_space = true;
+            int len = 1;
+            unsigned char lead = (unsigned char)*pch;
+            if (lead >= 0xF0) {
+                len = 4;
+            } else if (lead >= 0xE0) {
+                len = 3;
+            } else if (lead >= 0xC0) {
+                len = 2;
+            }
+            for (int i = 1; i < len; i++) {
+                if (pch[i] == '\0') {
+                    len = i;
+                    break;
+                }
             }
 
-            if (text_width(text) > 100) {
+            if (*pch == ' '
+                || (len == 3 && (unsigned char)pch[0] == 0xE3 && (unsigned char)pch[1] == 0x83 && (unsigned char)pch[2] == 0xBB)) {
+                has_space = true;
+                sep = pch;
+            }
+
+            tmp = pch[len];
+            pch[len] = '\0';
+            bool over = text_width(text) > 100;
+            pch[len] = tmp;
+            if (over) {
+                *pch = '\0';
                 break;
             }
 
-            *pch = tmp;
-            pch++;
+            pch += len;
         }
 
-        if (has_space) {
-            pch = text + strlen(text);
-            while (pch != text && *pch != ' ') {
-                *pch = '\0';
-                pch--;
-            }
+        if (has_space && sep != NULL && *pch == '\0' && sep < pch) {
+            *sep = '\0';
         }
     }
 
@@ -2217,7 +2259,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Poisoned
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_POISONED) {
         color = critter_get_poison(obj_dude) != 0 ? colorTable[32747] : colorTable[15845];
@@ -2230,7 +2272,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Radiated
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_RADIATED) {
         color = critter_get_rads(obj_dude) != 0 ? colorTable[32747] : colorTable[15845];
@@ -2243,7 +2285,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Eye Damage
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_EYE_DAMAGE) {
         color = (conditions & DAM_BLIND) ? colorTable[32747] : colorTable[15845];
@@ -2256,7 +2298,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Crippled Right Arm
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_CRIPPLED_RIGHT_ARM) {
         color = (conditions & DAM_CRIP_ARM_RIGHT) ? colorTable[32747] : colorTable[15845];
@@ -2269,7 +2311,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Crippled Left Arm
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_CRIPPLED_LEFT_ARM) {
         color = (conditions & DAM_CRIP_ARM_LEFT) ? colorTable[32747] : colorTable[15845];
@@ -2282,7 +2324,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Crippled Right Leg
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_CRIPPLED_RIGHT_LEG) {
         color = (conditions & DAM_CRIP_LEG_RIGHT) ? colorTable[32747] : colorTable[15845];
@@ -2295,7 +2337,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 194, t, 640, 640, color);
 
     // Crippled Left Leg
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_CRIPPLED_LEFT_LEG) {
         color = (conditions & DAM_CRIP_LEG_LEFT) ? colorTable[32747] : colorTable[15845];
@@ -2326,7 +2368,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Action Points
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_ACTION_POINTS) {
         color = colorTable[32747];
@@ -2342,7 +2384,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Carry Weight
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_CARRY_WEIGHT) {
         color = colorTable[32747];
@@ -2358,7 +2400,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Melee Damage
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_MELEE_DAMAGE) {
         color = colorTable[32747];
@@ -2374,7 +2416,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Damage Resistance
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_DAMAGE_RESISTANCE) {
         color = colorTable[32747];
@@ -2390,7 +2432,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Poison Resistance
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_POISON_RESISTANCE) {
         color = colorTable[32747];
@@ -2406,7 +2448,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Radiation Resistance
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_RADIATION_RESISTANCE) {
         color = colorTable[32747];
@@ -2422,7 +2464,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Sequence
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_SEQUENCE) {
         color = colorTable[32747];
@@ -2438,7 +2480,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Healing Rate
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_HEALING_RATE) {
         color = colorTable[32747];
@@ -2454,7 +2496,7 @@ static void ListDrvdStats()
     text_to_buf(win_buf + 640 * y + 288, t, 640, 640, color);
 
     // Critical Chance
-    y += text_height() + 3;
+    y += ED_ROW3; // nettoge.com: fixed row
 
     if (info_line == EDITOR_FIRST_DERIVED_STAT + EDITOR_DERIVED_STAT_CRITICAL_CHANCE) {
         color = colorTable[32747];
@@ -2523,6 +2565,8 @@ static void ListSkills(int a1)
     skill_set_tags(temp_tag_skill, NUM_TAGGED_SKILLS);
 
     text_font(101);
+    // nettoge.com: 11 px rows fixed by the art, 10 px glyphs (see jtext_small).
+    jtext_small(true);
 
     y = 27;
     for (i = 0; i < SKILL_COUNT; i++) {
@@ -2548,11 +2592,11 @@ static void ListSkills(int a1)
 
         text_to_buf(win_buf + 640 * y + 573, valueString, 640, 640, color);
 
-        y += text_height() + 1;
+        y += ED_ROW; // nettoge.com: fixed row
     }
 
     if (!glblmode) {
-        y = skill_cursor * (text_height() + 1);
+        y = skill_cursor * ED_ROW;
         slider_y = y + 27;
 
         trans_buf_to_buf(
@@ -2601,6 +2645,7 @@ static void ListSkills(int a1)
             }
         }
     }
+    jtext_small(false); // nettoge.com
 }
 
 // 0x4305DC
@@ -4659,7 +4704,7 @@ static void InfoButton(int eventCode)
                 offset = 0;
             }
 
-            info_line = offset / 10 + 7;
+            info_line = offset / ED_LINE + 7; // nettoge.com: 12 px rows
         }
         break;
     case 527:
@@ -4669,7 +4714,7 @@ static void InfoButton(int eventCode)
             if (offset < 0) {
                 offset = 0;
             }
-            info_line = offset / (text_height() + 1) + 10;
+            info_line = offset / ED_ROW + 10; // nettoge.com: fixed row
 
             if (folder == EDITOR_FOLDER_KILLS && mouse_xpos > 174) {
                 info_line += 10;
@@ -4727,7 +4772,7 @@ static void InfoButton(int eventCode)
             double mouseY = mouse_ypos;
             double fontLineHeight = text_height();
             double y = 353.0;
-            double step = text_height() + 3 + 0.56;
+            double step = ED_ROW3 + 0.56; // nettoge.com: fixed row
             int index;
             for (index = 0; index < 8; index++) {
                 if (mouseY >= y - 4.0 && mouseY <= y + fontLineHeight) {
@@ -4990,7 +5035,7 @@ static void ListTraits()
 
     trait_set(temp_trait[0], temp_trait[1]);
 
-    step = text_height() + 3 + 0.56;
+    step = ED_ROW3 + 0.56; // nettoge.com: fixed row
     y = 353;
     for (trait = 0; trait < 8; trait++) {
         if (trait == selected_trait_line) {
@@ -5125,7 +5170,7 @@ static int ListKarma()
     text_to_buf(win_buf + 640 * 362 + 34, text, 640, 640, color);
 
     count = 1;
-    y = text_height() + 363;
+    y = 362 + ED_ROW; // nettoge.com: fixed row
     for (index = 0; index < 9; index++) {
         if (game_global_vars[karma_var_table[index]]) {
             if (count == selected_karma_line) {
@@ -5139,7 +5184,7 @@ static int ListKarma()
                 640,
                 640,
                 color);
-            y += 1 + text_height();
+            y += ED_ROW; // nettoge.com: fixed row
 
             count++;
         }
@@ -5498,7 +5543,7 @@ static int InputPDLoop(int count, void (*refreshProc)())
 
     int height = text_height();
     oldsline = -2;
-    int v16 = height + 2;
+    int v16 = ED_LINE; // nettoge.com: fixed row
 
     int v7 = 0;
 
@@ -5772,7 +5817,7 @@ static int ListDPerks()
     v16 += crow;
 
     int y = 43;
-    int yStep = text_height() + 2;
+    int yStep = ED_LINE; // nettoge.com: fixed row
     for (int index = crow; index < v16; index++) {
         int color;
         if (index == crow + cline) {
@@ -5953,14 +5998,14 @@ static bool Add4thTagSkill()
 // 0x437430
 static void ListNewTagSkills()
 {
-    buf_to_buf(pbckgnd + PERK_WINDOW_WIDTH * 43 + 45, 192, 129, PERK_WINDOW_WIDTH, pwin_buf + PERK_WINDOW_WIDTH * 43 + 45, PERK_WINDOW_WIDTH);
+    buf_to_buf(pbckgnd + PERK_WINDOW_WIDTH * 43 + 45, 192, 132, PERK_WINDOW_WIDTH, pwin_buf + PERK_WINDOW_WIDTH * 43 + 45, PERK_WINDOW_WIDTH); // nettoge.com: 11 px glyphs reach row 174
 
     text_font(101);
 
     optrt_count = 0;
 
     int y = 43;
-    int yStep = text_height() + 2;
+    int yStep = ED_LINE; // nettoge.com: fixed row
 
     for (int skill = 0; skill < SKILL_COUNT; skill++) {
         if (skill != temp_tag_skill[0] && skill != temp_tag_skill[1] && skill != temp_tag_skill[2] && skill != temp_tag_skill[3]) {
@@ -5988,12 +6033,12 @@ static void ListNewTagSkills()
 // 0x437574
 static int ListMyTraits(int a1)
 {
-    buf_to_buf(pbckgnd + PERK_WINDOW_WIDTH * 43 + 45, 192, 129, PERK_WINDOW_WIDTH, pwin_buf + PERK_WINDOW_WIDTH * 43 + 45, PERK_WINDOW_WIDTH);
+    buf_to_buf(pbckgnd + PERK_WINDOW_WIDTH * 43 + 45, 192, 132, PERK_WINDOW_WIDTH, pwin_buf + PERK_WINDOW_WIDTH * 43 + 45, PERK_WINDOW_WIDTH); // nettoge.com: 11 px glyphs reach row 174
 
     text_font(101);
 
     int y = 43;
-    int yStep = text_height() + 2;
+    int yStep = ED_LINE; // nettoge.com: fixed row
 
     if (a1 != 0) {
         int count = 0;

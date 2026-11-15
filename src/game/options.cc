@@ -30,6 +30,7 @@
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/text.h"
 
 namespace fallout {
@@ -1476,6 +1477,11 @@ static void UpdateThing(int index)
             }
 
             int y = meta->knobY + bglby[valueIndex];
+            // nettoge.com: Japanese glyphs fill the whole cell, so the label above
+            // the knob is raised to keep the knob off its bottom rows.
+            if (valueIndex == 1 && jtext_active()) {
+                y -= 3;
+            }
             const char* s;
             if (*p != '\0') {
                 *p = '\0';

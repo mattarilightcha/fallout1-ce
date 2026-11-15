@@ -94,6 +94,14 @@ bool svga_init(VideoOptions* video_options)
         windowFlags |= SDL_WINDOW_FULLSCREEN;
     }
 
+#ifdef NTG_SHOOT
+    // nettoge.com shoot build: no window on the desktop (FO_SHOOT_SHOW=1 shows it).
+    if (SDL_getenv("FO_SHOOT_SHOW") == NULL) {
+        windowFlags &= ~SDL_WINDOW_FULLSCREEN;
+        windowFlags |= SDL_WINDOW_HIDDEN;
+    }
+#endif
+
     gSdlWindow = SDL_CreateWindow(GNW95_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         video_options->width * video_options->scale,
         video_options->height * video_options->scale,

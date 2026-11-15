@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
-set(EXECUTABLE_NAME fallout-ce)
+# nettoge.com: -DNTG_SHOOT=ON builds the development / screenshot build
+# (fallout-ce-shoot, see src/ntg_shoot.h). The default is the play build.
+option(NTG_SHOOT "nettoge.com development / screenshot build" OFF)
+if(NTG_SHOOT)
+    set(EXECUTABLE_NAME fallout-ce-shoot)
+else()
+    set(EXECUTABLE_NAME fallout-ce)
+endif()
 
 if (APPLE)
     if(IOS)
@@ -249,6 +256,10 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/plib/gnw/svga_types.h"
     "src/plib/gnw/svga.cc"
     "src/plib/gnw/svga.h"
+    "src/ntg_shoot.cc"
+    "src/ntg_shoot.h"
+    "src/plib/gnw/jtext.cc"
+    "src/plib/gnw/jtext.h"
     "src/plib/gnw/text.cc"
     "src/plib/gnw/text.h"
     "src/plib/gnw/vcr.cc"
@@ -377,4 +388,8 @@ if(APPLE)
     endif()
 
     include(CPack)
+endif()
+
+if(NTG_SHOOT)
+    target_compile_definitions(${EXECUTABLE_NAME} PUBLIC NTG_SHOOT)
 endif()

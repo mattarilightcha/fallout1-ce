@@ -190,6 +190,13 @@ bool message_load(MessageList* messageList, const char* path)
     snprintf(localized_path, sizeof(localized_path), "%s\\%s\\%s", "text", language, path);
 
     file_ptr = db_fopen(localized_path, "rt");
+
+    // nettoge.com: fall back to the English file while a translation is missing.
+    if (file_ptr == NULL && compat_stricmp(language, ENGLISH) != 0) {
+        snprintf(localized_path, sizeof(localized_path), "%s%c%s%c%s", "text", 92, ENGLISH, 92, path);
+        file_ptr = db_fopen(localized_path, "rt");
+    }
+
     if (file_ptr == NULL) {
         return false;
     }
@@ -554,6 +561,45 @@ bool message_filter(MessageList* messageList)
     }
 
     return true;
+}
+
+// nettoge.com: <male text^female text> in dialog messages keeps one side by the
+// player's gender. Ported from fallout2-ce (sfall DialogGenderWords); always on here.
+void message_filter_gender_words(MessageList* messageList, bool female)
+{
+    if (messageList == NULL) {
+        return;
+    }
+
+    for (int index = 0; index < messageList->entries_num; index++) {
+        MessageListItem* item = &(messageList->entries[index]);
+        char* text = item->text;
+        char* sep;
+
+        while ((sep = strchr(text, '^')) != NULL) {
+            *sep = '\0';
+            char* start = strrchr(text, '<');
+            char* end = strchr(sep + 1, '>');
+            *sep = '^';
+
+            if (start != NULL && end != NULL) {
+                char* src;
+                size_t length;
+                if (female) {
+                    src = sep + 1;
+                    length = end - sep - 1;
+                } else {
+                    src = start + 1;
+                    length = sep - start - 1;
+                }
+
+                memmove(start, src, length);
+                memmove(start + length, end + 1, strlen(end + 1) + 1);
+            } else {
+                text = sep + 1;
+            }
+        }
+    }
 }
 
 } // namespace fallout

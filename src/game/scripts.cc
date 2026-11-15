@@ -19,6 +19,8 @@
 #include "game/protinst.h"
 #include "game/proto.h"
 #include "game/queue.h"
+#include "game/proto_types.h"
+#include "game/stat.h"
 #include "game/tile.h"
 #include "game/worldmap.h"
 #include "int/dialog.h"
@@ -2500,6 +2502,9 @@ int scr_get_dialog_msg_file(int a1, MessageList** messageListPtr)
             debug_printf("\nError filtering script dialog message file!");
             return -1;
         }
+
+        // nettoge.com: <male^female> words by the player's gender (from fallout2-ce / sfall).
+        message_filter_gender_words(messageList, stat_level(obj_dude, STAT_GENDER) == GENDER_FEMALE);
     }
 
     *messageListPtr = messageList;

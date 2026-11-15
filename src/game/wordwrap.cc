@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/text.h"
 
 namespace fallout {
@@ -20,6 +21,26 @@ int word_wrap(const char* string, int width, short* breakpoints, short* breakpoi
 
     if (text_max() > width) {
         return -1;
+    }
+
+    // nettoge.com: Japanese line breaking (kinsoku, no spaces needed).
+    if (jtext_active()) {
+        int pos = 0;
+        int len = (int)strlen(string);
+        while (pos < len) {
+            int next;
+            jtext_fit(string + pos, width, &next);
+            if (next <= 0) {
+                next = 1;
+            }
+            pos += next;
+            if (*breakpointsLengthPtr == WORD_WRAP_MAX_COUNT) {
+                return -1;
+            }
+            breakpoints[*breakpointsLengthPtr] = (short)(pos < len ? pos : len + 1);
+            *breakpointsLengthPtr += 1;
+        }
+        return 0;
     }
 
     if (text_width(string) < width) {

@@ -6,6 +6,7 @@
 #include "platform_compat.h"
 #include "plib/color/color.h"
 #include "plib/db/db.h"
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/memory.h"
 
 namespace fallout {
@@ -287,6 +288,9 @@ void text_font(int font_num)
         curr_font_num = font_num;
 
         mgr->text_font(font_num);
+
+        // nettoge.com: Japanese text layer (wraps the functions set above).
+        jtext_on_font(font_num, mgr);
     }
 }
 

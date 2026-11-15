@@ -1,3 +1,40 @@
+# Fallout Community Edition 日本語化（nettoge.com の改造版）
+
+**This software has been modified by nettoge.com.** This is a fork of [Fallout Community Edition](https://github.com/alexbatalov/fallout1-ce) by alexbatalov that draws Japanese text. It is not made or endorsed by the original author, Bethesda Softworks or Interplay.
+
+初代 Fallout（Steam 版）を日本語で遊ぶための、fallout1-ce の改造版です。日本語の文・フォント・画面の絵は [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) の zip に入っています。入れ方と解説は [nettoge.com](https://nettoge.com/) の記事にあります。
+
+## 入れ方
+
+1. [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) から `fallout1-japanese-1.00.zip` を落とし、中身を全部 Steam の Fallout のフォルダへ写します（Steam のライブラリで Fallout を右クリック →「管理」→「ローカルファイルを閲覧」）。`fallout-ce.exe` と `DATA` が `FALLOUTW.EXE`・`MASTER.DAT` と同じ所に並べば合っています。Steam のファイルは上書きしません。
+2. 同じフォルダの `fallout.cfg` で、`language=english` を `language=japanese` に、`subtitles=0` を `subtitles=1` に書き換えます。
+3. `fallout-ce.exe` を起動します。起動しない時は Microsoft Visual C++ 再頒布可能パッケージ（x86）を入れてください。
+
+## 改造した所
+
+元のコードからの変更には、どれも `nettoge.com:` の注記を付けています。
+
+- 日本語の文字の描画（UTF-8、ビットマップのフォント `.jfn`、禁則つきの折り返し）: `src/plib/gnw/jtext.cc`・`jtext.h`、`text.cc`・`wordwrap.cc`・`int/window.cc`
+- 会話・キャラクター作成・持ち物・セーブとロード・設定・キャラクター選択の、日本語の字に合わせた行の高さと位置: `gdialog.cc`・`editor.cc`・`inventry.cc`・`loadsave.cc`・`options.cc`・`select.cc`
+- 主人公の性別で会話の言い方を切り替える `<男の文^女の文>`: `message.cc`
+- 映像の崩れの直し: `movie_lib.cc` の `getOffset` が行の位置を `uint8_t` で返していて、大きな映像のブロックが別の行へずれていました（元の fallout1-ce にもある不具合です）
+- 開発・撮影ビルド（`-DNTG_SHOOT=ON`、`src/ntg_shoot.cc`）。画面を外から操作して撮るための物で、配る `fallout-ce.exe` には入っていません
+
+## 組み方（Windows・Visual Studio 2022・Win32）
+
+```
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build build --config RelWithDebInfo
+```
+
+## 使用許諾
+
+元の fallout1-ce と同じ Sustainable Use License 1.0 です（[LICENSE.md](LICENSE.md)、変えていません）。配れるのは、無料で、非営利の目的の時だけです。日本語のフォントは SIL Open Font License 1.1 のフォントから作り、全文を Releases の zip の `ライセンス` フォルダに入れています。Fallout は Bethesda Softworks LLC の商標です。
+
+---
+
+以下は元の fallout1-ce の README です。
+
 # Fallout Community Edition
 
 Fallout Community Edition is a fully working re-implementation of Fallout, with the same original gameplay, engine bugfixes, and some quality of life improvements, that works (mostly) hassle-free on multiple platforms.

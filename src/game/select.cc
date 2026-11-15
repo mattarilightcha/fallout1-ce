@@ -57,8 +57,10 @@ namespace fallout {
 #define CS_WINDOW_BACK_BUTTON_Y 425
 
 #define CS_WINDOW_NAME_MID_X 318
-#define CS_WINDOW_PRIMARY_STAT_MID_X 348
-#define CS_WINDOW_SECONDARY_STAT_MID_X 365
+// nettoge.com: moved for the 12 px font, so that the descriptions end before
+// the bio (x 420) and the long names start after the portrait (x 256).
+#define CS_WINDOW_PRIMARY_STAT_MID_X 342
+#define CS_WINDOW_SECONDARY_STAT_MID_X 370
 #define CS_WINDOW_BIO_X 420
 
 typedef enum PremadeCharacter {
@@ -767,18 +769,24 @@ static bool select_display_stats()
 
     text_char_width(0x20);
 
+    // nettoge.com: 12 px rows; the blank lines are half a row (CS_GAP) so that
+    // all 17 rows stay inside the frame.
     int vh = text_height();
     int y = 40;
+    const int CS_GAP = vh / 2;
 
     // NAME
     str = object_name(obj_dude);
     strcpy(text, str);
 
+    // nettoge.com: the name in the 12 px Japanese font (font 0), like the bio.
+    text_font(0);
     length = text_width(text);
     text_to_buf(select_window_buffer + CS_WINDOW_WIDTH * y + CS_WINDOW_NAME_MID_X - (length / 2), text, 160, CS_WINDOW_WIDTH, colorTable[992]);
+    text_font(101);
 
     // STRENGTH
-    y += vh + vh + vh;
+    y += vh + vh - 6; // nettoge.com: was 3 rows
 
     value = stat_level(obj_dude, STAT_STRENGTH);
     str = stat_name(STAT_STRENGTH);
@@ -896,7 +904,7 @@ static bool select_display_stats()
     length = text_width(text);
     text_to_buf(select_window_buffer + CS_WINDOW_WIDTH * y + CS_WINDOW_PRIMARY_STAT_MID_X, text, length, CS_WINDOW_WIDTH, colorTable[992]);
 
-    y += vh; // blank line
+    y += CS_GAP; // nettoge.com: blank line, half a row
 
     // HIT POINTS
     y += vh;
@@ -964,7 +972,7 @@ static bool select_display_stats()
     length = text_width(text);
     text_to_buf(select_window_buffer + CS_WINDOW_WIDTH * y + CS_WINDOW_SECONDARY_STAT_MID_X, text, length, CS_WINDOW_WIDTH, colorTable[992]);
 
-    y += vh; // blank line
+    y += CS_GAP; // nettoge.com: blank line, half a row
 
     // SKILLS
     int skills[DEFAULT_TAGGED_SKILLS];
@@ -1009,7 +1017,9 @@ static bool select_display_stats()
 static bool select_display_bio()
 {
     int oldFont = text_curr();
-    text_font(101);
+    // nettoge.com: 12 px Japanese font (font 0) instead of the 10 px font 101.
+    // tools/mkbio.py breaks the lines for this font's widths.
+    text_font(0);
 
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "%s.bio", premade_characters[premade_index].fileName);
@@ -1021,6 +1031,13 @@ static bool select_display_bio()
 
         char string[256];
         while (db_fgets(string, 256, stream) && y < 260) {
+            // nettoge.com: font 0 has a glyph for '\n' (font 101 drew nothing),
+            // so the line end is cut off before drawing.
+            size_t len = strlen(string);
+            while (len > 0 && (string[len - 1] == '\n' || string[len - 1] == '\r')) {
+                string[--len] = '\0';
+            }
+
             text_to_buf(select_window_buffer + CS_WINDOW_WIDTH * y + CS_WINDOW_BIO_X,
                 string,
                 CS_WINDOW_WIDTH - CS_WINDOW_BIO_X,

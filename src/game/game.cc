@@ -55,6 +55,7 @@
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/text.h"
 
 namespace fallout {
@@ -187,6 +188,14 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
     FMInit();
     text_add_manager(&alias_mgr);
     text_font(font);
+
+    // nettoge.com: Japanese text layer (see plib/gnw/jtext.h).
+    {
+        char* language;
+        if (config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language)) {
+            jtext_init(language);
+        }
+    }
 
     register_screendump(KEY_F12, game_screendump);
     register_pause(-1, NULL);

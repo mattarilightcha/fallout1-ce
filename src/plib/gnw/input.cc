@@ -1,5 +1,7 @@
 #include "plib/gnw/input.h"
 
+#include "ntg_shoot.h"
+
 #include <limits.h>
 #include <stdio.h>
 
@@ -217,9 +219,15 @@ void process_bk()
 
     GNW_do_bk_process();
 
+#ifdef NTG_SHOOT
+    // nettoge.com shoot build: command files drive a simulated mouse.
+    vcr_update();
+    shoot_tick();
+#else
     if (vcr_update() != 3) {
         mouse_info();
     }
+#endif
 
     v1 = win_check_all_buttons();
     if (v1 != -1) {
@@ -489,6 +497,17 @@ void dump_screen()
     screendump_func(width, length, screendump_buf, pal);
     mem_free(screendump_buf);
 }
+
+#ifdef NTG_SHOOT
+// nettoge.com shoot build: dump the screen with the given writer.
+void shoot_dump_screen(ScreenDumpFunc* func)
+{
+    ScreenDumpFunc* old = screendump_func;
+    screendump_func = func;
+    dump_screen();
+    screendump_func = old;
+}
+#endif
 
 // 0x4B3838
 static void buf_blit(unsigned char* src, unsigned int srcPitch, unsigned int a3, unsigned int srcX, unsigned int srcY, unsigned int width, unsigned int height, unsigned int destX, unsigned int destY)
@@ -1127,8 +1146,11 @@ void GNW95_process_message()
                 audioEngineResume();
                 break;
             case SDL_WINDOWEVENT_FOCUS_LOST:
+#ifndef NTG_SHOOT
+                // nettoge.com shoot build keeps running without focus.
                 GNW95_isActive = false;
                 audioEnginePause();
+#endif
                 break;
             }
             break;

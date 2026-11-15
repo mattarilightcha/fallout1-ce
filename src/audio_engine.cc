@@ -95,6 +95,10 @@ static void audioEngineMixin(void* userData, Uint8* stream, int length)
 
 bool audioEngineInit()
 {
+#ifdef NTG_SHOOT
+    // nettoge.com shoot build is silent unless SDL_AUDIODRIVER is given.
+    SDL_setenv("SDL_AUDIODRIVER", "dummy", 0);
+#endif
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) == -1) {
         return false;
     }

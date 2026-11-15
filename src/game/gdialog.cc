@@ -39,6 +39,7 @@
 #include "plib/gnw/memory.h"
 #include "plib/gnw/rect.h"
 #include "plib/gnw/svga.h"
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/text.h"
 
 namespace fallout {
@@ -2567,6 +2568,55 @@ static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, in
     }
 
     int maxWidth = rect->lrx - rect->ulx;
+
+    // nettoge.com: Japanese line breaking (kinsoku, no spaces needed).
+    if (jtext_active()) {
+        while (start != NULL && *start != '\0') {
+            int next;
+            // The first line of a reply is drawn 10 pixels to the right.
+            int indent = (a7 != 1 || start == string) ? 10 : 0;
+            int lineLength = jtext_fit(start, maxWidth - indent, &next);
+            if (next <= 0) {
+                next = 1;
+                lineLength = 1;
+            }
+
+            if (rect->lry - text_height() < rect->uly) {
+                return rect->uly;
+            }
+
+            if (a7 != 0) {
+                char line[1024];
+                if (lineLength > (int)sizeof(line) - 1) {
+                    lineLength = sizeof(line) - 1;
+                }
+                memcpy(line, start, lineLength);
+                line[lineLength] = '\0';
+
+                unsigned char* dest;
+                if (a7 != 1 || start == string) {
+                    dest = buffer + 10;
+                } else {
+                    dest = buffer;
+                }
+                text_to_buf(dest + pitch * rect->uly, line, maxWidth, pitch, color);
+            }
+
+            if (a4 != NULL) {
+                *a4 += next;
+            }
+
+            rect->uly += height;
+            start += next;
+        }
+
+        if (a4 != NULL) {
+            *a4 = 0;
+        }
+
+        return rect->uly;
+    }
+
     char* end = NULL;
     while (start != NULL && *start != '\0') {
         if (text_width(start) > maxWidth) {

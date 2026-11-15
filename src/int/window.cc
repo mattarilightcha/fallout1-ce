@@ -17,6 +17,7 @@
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
 #include "plib/gnw/svga.h"
+#include "plib/gnw/jtext.h"
 #include "plib/gnw/text.h"
 
 namespace fallout {
@@ -1139,6 +1140,34 @@ char** windowWordWrap(char* string, int maxLength, int a3, int* substringListLen
 
     char** substringList = NULL;
     int substringListLength = 0;
+
+    // nettoge.com: Japanese line breaking (kinsoku, no spaces needed).
+    if (jtext_active()) {
+        char* pos = string;
+        int first = a3;
+        while (*pos != '\0') {
+            int next;
+            int lineLength = jtext_fit(pos, maxLength - first, &next);
+            if (next <= 0) {
+                next = 1;
+                lineLength = 1;
+            }
+            first = 0;
+
+            if (substringList != NULL) {
+                substringList = (char**)myrealloc(substringList, sizeof(*substringList) * (substringListLength + 1), __FILE__, __LINE__);
+            } else {
+                substringList = (char**)mymalloc(sizeof(*substringList), __FILE__, __LINE__);
+            }
+            char* substring = (char*)mymalloc(lineLength + 1, __FILE__, __LINE__);
+            strncpy(substring, pos, lineLength);
+            substring[lineLength] = '\0';
+            substringList[substringListLength++] = substring;
+            pos += next;
+        }
+        *substringListLengthPtr = substringListLength;
+        return substringList;
+    }
 
     char* start = string;
     char* pch = string;

@@ -60,6 +60,12 @@ namespace fallout {
 #define LS_WINDOW_WIDTH 640
 #define LS_WINDOW_HEIGHT 480
 
+// nettoge.com: the slot list was laid out for the 10 px font 101 (rows of
+// 10, slots of 34). With the 12 px font the rows are 12 and the slots 36, so
+// that the tenth slot still ends inside the list (y 440).
+#define LS_ROW 12
+#define LS_SLOT_STEP (3 * LS_ROW)
+
 #define LS_PREVIEW_WIDTH 224
 #define LS_PREVIEW_HEIGHT 133
 #define LS_PREVIEW_SIZE ((LS_PREVIEW_WIDTH) * (LS_PREVIEW_HEIGHT))
@@ -522,7 +528,7 @@ int SaveGame(int mode)
                     int mouseY;
                     mouseGetPositionInWindow(lsgwin, &mouseX, &mouseY);
 
-                    slot_cursor = (mouseY - 79) / (3 * text_height() + 4);
+                    slot_cursor = (mouseY - 79) / LS_SLOT_STEP;
                     if (slot_cursor < 0) {
                         slot_cursor = 0;
                     }
@@ -1025,7 +1031,7 @@ int LoadGame(int mode)
                     int mouseY;
                     mouseGetPositionInWindow(lsgwin, &mouseX, &mouseY);
 
-                    int clickedSlot = (mouseY - 79) / (3 * text_height() + 4);
+                    int clickedSlot = (mouseY - 79) / LS_SLOT_STEP;
                     if (clickedSlot < 0) {
                         clickedSlot = 0;
                     } else if (clickedSlot > 9) {
@@ -1921,7 +1927,7 @@ static void ShowSlotList(int a1)
         snprintf(str, sizeof(str), "[   %s %.2d:   ]", text, index + 1);
         text_to_buf(lsgbuf + LS_WINDOW_WIDTH * y + 55, str, LS_WINDOW_WIDTH, LS_WINDOW_WIDTH, color);
 
-        y += text_height();
+        y += LS_ROW; // nettoge.com: fixed row
         switch (LSstatus[index]) {
         case SLOT_STATE_OCCUPIED:
             strcpy(str, LSData[index].description);
@@ -1946,7 +1952,7 @@ static void ShowSlotList(int a1)
         }
 
         text_to_buf(lsgbuf + LS_WINDOW_WIDTH * y + 55, str, LS_WINDOW_WIDTH, LS_WINDOW_WIDTH, color);
-        y += 2 * text_height() + 4;
+        y += LS_SLOT_STEP - LS_ROW; // nettoge.com: fixed slot
     }
 }
 
