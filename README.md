@@ -6,7 +6,7 @@
 
 ## 入れ方
 
-1. [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) から `fallout1-japanese-1.00.zip` を落とし、中身を全部 Steam の Fallout のフォルダへ写します（Steam のライブラリで Fallout を右クリック →「管理」→「ローカルファイルを閲覧」）。`fallout-ce.exe` と `DATA` が `FALLOUTW.EXE`・`MASTER.DAT` と同じ所に並べば合っています。Steam のファイルは上書きしません。
+1. [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) から `fallout1-japanese-1.01.zip` を落とし、中身を全部 Steam の Fallout のフォルダへ写します（Steam のライブラリで Fallout を右クリック →「管理」→「ローカルファイルを閲覧」）。`fallout-ce.exe` と `DATA` が `FALLOUTW.EXE`・`MASTER.DAT` と同じ所に並べば合っています。Steam のファイルは上書きしません。
 2. 同じフォルダの `fallout.cfg` で、`language=english` を `language=japanese` に、`subtitles=0` を `subtitles=1` に書き換えます。
 3. `fallout-ce.exe` を起動します。起動しない時は Microsoft Visual C++ 再頒布可能パッケージ（x86）を入れてください。
 
@@ -16,6 +16,7 @@
 
 - 日本語の文字の描画（UTF-8、ビットマップのフォント `.jfn`、禁則つきの折り返し）: `src/plib/gnw/jtext.cc`・`jtext.h`、`text.cc`・`wordwrap.cc`・`int/window.cc`
 - 会話・キャラクター作成・持ち物・セーブとロード・設定・キャラクター選択の、日本語の字に合わせた行の高さと位置: `gdialog.cc`・`editor.cc`・`inventry.cc`・`loadsave.cc`・`options.cc`・`select.cc`
+- Pip-Boy の紙の日数を、手書きの日本語と同じ字で「日」の横に水平に並べる（数字の絵 `NOTENUMS.FRM` は描き直した物を zip に入れています）: `pipboy.cc`
 - 主人公の性別で会話の言い方を切り替える `<男の文^女の文>`: `message.cc`
 - 映像の崩れの直し: `movie_lib.cc` の `getOffset` が行の位置を `uint8_t` で返していて、大きな映像のブロックが別の行へずれていました（元の fallout1-ce にもある不具合です）
 - 開発・撮影ビルド（`-DNTG_SHOOT=ON`、`src/ntg_shoot.cc`）。画面を外から操作して撮るための物で、配る `fallout-ce.exe` には入っていません

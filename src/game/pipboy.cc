@@ -845,25 +845,48 @@ void pip_init()
 // 0x4872B8
 static void pip_days_left(int days)
 {
-    int x = 92;
-    int y = PIPBOY_WINDOW_WIDTH * 180;
+    // nettoge.com: the Japanese note (NOTENUMS.FRM redrawn by tools/notenums.py)
+    // has digits in the same pen as the handwritten Japanese. They sit level
+    // with the day mark drawn on the note (ink x 79..93, y 90..105 of the note),
+    // right to left, each digit as wide as its ink plus one pixel. The original
+    // stepped every digit 2 px down and used a fixed 12 px advance.
+    unsigned char* nums = pipbmp[PIPBOY_FRM_NOTE_NUMBERS];
+    int width = ginfo[PIPBOY_FRM_NOTE_NUMBERS].width;
+    int height = ginfo[PIPBOY_FRM_NOTE_NUMBERS].height;
+    int right = PIPBOY_WINDOW_NOTE_X + 77;
+    int y = PIPBOY_WINDOW_WIDTH * (PIPBOY_WINDOW_NOTE_Y + 90);
 
     while (days != 0) {
-        trans_buf_to_buf(pipbmp[PIPBOY_FRM_NOTE_NUMBERS] + 12 * (days % 10),
-            12,
-            ginfo[PIPBOY_FRM_NOTE_NUMBERS].height,
-            ginfo[PIPBOY_FRM_NOTE_NUMBERS].width,
+        int digit = days % 10;
+        int left = 12;
+        int last = -1;
+        for (int cx = 0; cx < 12; cx++) {
+            for (int cy = 0; cy < height; cy++) {
+                if (nums[cy * width + 12 * digit + cx] != 0) {
+                    if (cx < left) {
+                        left = cx;
+                    }
+                    last = cx;
+                    break;
+                }
+            }
+        }
+        if (last < left) {
+            left = 0;
+            last = 11;
+        }
+
+        int inkWidth = last - left + 1;
+        int x = right - inkWidth;
+        trans_buf_to_buf(nums + 12 * digit + left,
+            inkWidth,
+            height,
+            width,
             scrn_buf + y + x,
             PIPBOY_WINDOW_WIDTH);
 
-        if (days % 10 == 1) {
-            x += 6;
-        }
-
+        right = x - 1;
         days /= 10;
-
-        x -= 12;
-        y += PIPBOY_WINDOW_WIDTH * 2;
     }
 }
 
