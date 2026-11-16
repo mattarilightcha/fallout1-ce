@@ -2,7 +2,7 @@
 
 **This software has been modified by nettoge.com.** This is a fork of [Fallout Community Edition](https://github.com/alexbatalov/fallout1-ce) by alexbatalov that draws Japanese text. It is not made or endorsed by the original author, Bethesda Softworks or Interplay.
 
-初代 Fallout（Steam 版）を日本語で遊ぶための、fallout1-ce の改造版です。日本語の文・フォント・画面の絵は [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) の zip に入っています。入れ方と解説は [nettoge.com](https://nettoge.com/) の記事にあります。
+初代 Fallout（Steam 版）を日本語で遊ぶための、fallout1-ce の改造版です。日本語の文・フォント・画面の絵は [Releases](https://github.com/mattarilightcha/fallout1-ce/releases) の zip に入っています。入れ方と解説は [nettoge.com](https://nettoge.com/fallout1-japanese/) の記事にあります。
 
 ## 入れ方
 
