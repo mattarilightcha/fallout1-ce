@@ -853,6 +853,25 @@ static void pip_days_left(int days)
     unsigned char* nums = pipbmp[PIPBOY_FRM_NOTE_NUMBERS];
     int width = ginfo[PIPBOY_FRM_NOTE_NUMBERS].width;
     int height = ginfo[PIPBOY_FRM_NOTE_NUMBERS].height;
+
+    // nettoge.com: the redrawn art is a separate mod. The original digits are
+    // 13 px high; without the mod the note is the English one, so draw the
+    // digits the original way.
+    if (height == 13) {
+        int ox = 92;
+        int oy = PIPBOY_WINDOW_WIDTH * 180;
+        while (days != 0) {
+            trans_buf_to_buf(nums + 12 * (days % 10), 12, height, width, scrn_buf + oy + ox, PIPBOY_WINDOW_WIDTH);
+            if (days % 10 == 1) {
+                ox += 6;
+            }
+            days /= 10;
+            ox -= 12;
+            oy += PIPBOY_WINDOW_WIDTH * 2;
+        }
+        return;
+    }
+
     int right = PIPBOY_WINDOW_NOTE_X + 77;
     int y = PIPBOY_WINDOW_WIDTH * (PIPBOY_WINDOW_NOTE_Y + 90);
 
