@@ -178,6 +178,119 @@ bool message_exit(MessageList* messageList)
     return true;
 }
 
+// nettoge.com: hash of an English line, the same as tools/mkmsg.py src_hash():
+// FNV-1a over the bytes, skipping white space and bytes >= 0x80 (the English
+// dump the translation was made from is UTF-8, the game files are cp1252).
+static unsigned int ntg_hash_text(const char* text)
+{
+    unsigned int h = 2166136261u;
+    for (const unsigned char* p = (const unsigned char*)text; *p != '\0'; p++) {
+        if (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p >= 0x80) {
+            continue;
+        }
+        h ^= *p;
+        h *= 16777619u;
+    }
+    return h;
+}
+
+// nettoge.com: per-number English fallback for mods. After a translated file is
+// read, the English file of the same name is read too (a mod's loose file in
+// DATA wins over master.dat). Numbers the translation does not have (lines a
+// mod added) come in English, and so do numbers whose English is not the one
+// the translation was made from (lines a mod changed or renumbered). The
+// hashes of the source lines are in text\<language>\<path>.src, written by
+// tools/mkmsg.py.
+static void ntg_merge_english(MessageList* messageList, const char* path, const char* language)
+{
+    char en_path[COMPAT_MAX_PATH];
+    snprintf(en_path, sizeof(en_path), "text\\%s\\%s", ENGLISH, path);
+    DB_FILE* en = db_fopen(en_path, "rt");
+    if (en == NULL) {
+        return;
+    }
+
+    std::map<int, std::string> src; // " h1 h2 ": the English lines the translation fits (the base game, and a mod's lines that only fix spelling)
+    char src_path[COMPAT_MAX_PATH];
+    snprintf(src_path, sizeof(src_path), "text\\%s\\%s.src", language, path);
+    DB_FILE* sf = db_fopen(src_path, "rt");
+    if (sf != NULL) {
+        char line[64];
+        while (db_fgets(line, sizeof(line), sf) != NULL) {
+            char* rest;
+            long n = strtol(line, &rest, 10);
+            if (rest != line) {
+                std::string hs = " ";
+                for (char* t = rest; *t != '\0'; t++) {
+                    hs += (*t == '\r' || *t == '\n' || *t == '\t') ? ' ' : *t;
+                }
+                src[(int)n] = hs + " ";
+            }
+        }
+        db_fclose(sf);
+    }
+
+    // the game keeps the last of a number written twice
+    std::map<int, std::pair<std::string, std::string>> lines;
+    char* num = (char*)mem_malloc(MESSAGE_LIST_ITEM_FIELD_MAX_SIZE * 3);
+    if (num == NULL) {
+        db_fclose(en);
+        return;
+    }
+    char* audio = num + MESSAGE_LIST_ITEM_FIELD_MAX_SIZE;
+    char* text = audio + MESSAGE_LIST_ITEM_FIELD_MAX_SIZE;
+    while (message_load_field(en, num) == 0) {
+        if (message_load_field(en, audio) != 0 || message_load_field(en, text) != 0) {
+            break;
+        }
+        int n;
+        if (!message_parse_number(&n, num)) {
+            break;
+        }
+        lines[n] = std::make_pair(std::string(audio), std::string(text));
+    }
+    db_fclose(en);
+
+    int added = 0;
+    int changed = 0;
+    for (auto& it : lines) {
+        int index;
+        bool have = message_find(messageList, it.first, &index);
+        if (have) {
+            auto h = src.find(it.first);
+            char hex[16];
+            snprintf(hex, sizeof(hex), " %08x ", ntg_hash_text(it.second.second.c_str()));
+            if (h == src.end() || h->second.find(hex) != std::string::npos) {
+                continue;
+            }
+        }
+        strncpy(audio, it.second.first.c_str(), MESSAGE_LIST_ITEM_FIELD_MAX_SIZE - 1);
+        audio[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE - 1] = '\0';
+        strncpy(text, it.second.second.c_str(), MESSAGE_LIST_ITEM_FIELD_MAX_SIZE - 1);
+        text[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE - 1] = '\0';
+        MessageListItem entry;
+        entry.num = it.first;
+        entry.audio = audio;
+        entry.text = text;
+        if (!message_add(messageList, &entry)) {
+            break;
+        }
+        if (have) {
+            changed++;
+            ntg_log(NTG_LOG_TRACE, "msg", "%s %d: changed by a mod, shown in English", path, it.first);
+        } else {
+            added++;
+            ntg_log(NTG_LOG_TRACE, "msg", "%s %d: added by a mod, shown in English", path, it.first);
+        }
+    }
+    mem_free(num);
+
+    if (added != 0 || changed != 0) {
+        ntg_log(NTG_LOG_INFO, "msg", "%s: %d lines added and %d lines changed by a mod, shown in English",
+            path, added, changed);
+    }
+}
+
 // 0x476814
 bool message_load(MessageList* messageList, const char* path)
 {
@@ -208,6 +321,7 @@ bool message_load(MessageList* messageList, const char* path)
     snprintf(localized_path, sizeof(localized_path), "%s\\%s\\%s", "text", language, path);
 
     file_ptr = db_fopen(localized_path, "rt");
+    bool translated = file_ptr != NULL;
 
     // nettoge.com: fall back to the English file while a translation is missing.
     if (file_ptr == NULL && compat_stricmp(language, ENGLISH) != 0) {
@@ -273,6 +387,11 @@ err:
     }
 
     db_fclose(file_ptr);
+
+    // nettoge.com: lines a mod added or changed come in English
+    if (success && compat_stricmp(language, ENGLISH) != 0 && translated) {
+        ntg_merge_english(messageList, path, language);
+    }
 
     return success;
 }
