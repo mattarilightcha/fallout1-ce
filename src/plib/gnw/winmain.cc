@@ -1,4 +1,5 @@
 #include "plib/gnw/winmain.h"
+#include "ntg_log.h"
 
 #include <stdlib.h>
 
@@ -57,6 +58,9 @@ int main(int argc, char* argv[])
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     chdir(SDL_AndroidGetExternalStoragePath());
 #endif
+
+    // nettoge.com: debug log and crash report (ntg_log.h).
+    ntg_log_init(argc, argv);
 
     SDL_ShowCursor(SDL_DISABLE);
 

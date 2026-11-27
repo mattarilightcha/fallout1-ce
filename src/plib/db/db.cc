@@ -1,4 +1,5 @@
 #include "plib/db/db.h"
+#include "ntg_log.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -519,7 +520,22 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
 }
 
 // 0x4AF9C4
+// nettoge.com: db_fopen with the log (level 3: every open and where it came from).
+static DB_FILE* db_fopen_ntg(const char* filename, const char* mode);
+static int ntg_db_source = 0;
+
 DB_FILE* db_fopen(const char* filename, const char* mode)
+{
+    ntg_db_source = 0;
+    DB_FILE* stream = db_fopen_ntg(filename, mode);
+    if (ntg_log_level() >= NTG_LOG_TRACE) {
+        ntg_log(NTG_LOG_TRACE, "file", "%s %s -> %s", mode != NULL ? mode : "?", filename != NULL ? filename : "(null)",
+            stream == NULL ? "not found" : (ntg_db_source == 1 ? "loose" : "dat"));
+    }
+    return stream;
+}
+
+static DB_FILE* db_fopen_ntg(const char* filename, const char* mode)
 {
     bool v1;
     char path[COMPAT_MAX_PATH];
@@ -606,6 +622,7 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
         }
 
         if (stream != NULL) {
+            ntg_db_source = 1;
             return db_add_fp_rec(stream, NULL, 0, flags | 0x4);
         }
     }

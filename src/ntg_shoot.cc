@@ -25,6 +25,7 @@
 #include "game/actions.h"
 #include "movie_lib.h"
 #include "game/critter.h"
+#include "game/display.h"
 #include "game/game.h"
 #include "game/map.h"
 #include "game/object.h"
@@ -326,6 +327,15 @@ static void run(const std::string& line)
         obj_move_to_tile(obj_dude, a, map_elevation, &rect);
         tile_set_center(a, TILE_SET_CENTER_REFRESH_WINDOW);
         g_wait_until = now + 200;
+    } else if (strcmp(cmd, "print") == 0) {
+        // nettoge.com: a line in the message window (to check the line breaking)
+        char text[512];
+        snprintf(text, sizeof(text), "%s", arg);
+        display_print(text);
+    } else if (strcmp(cmd, "crash") == 0) {
+        // nettoge.com: test of the crash report while the game runs
+        volatile int* nowhere = NULL;
+        *nowhere = 1;
     } else if (strcmp(cmd, "talk") == 0) {
         Object* target = find_critter(arg);
         if (target == NULL) {
@@ -407,12 +417,11 @@ void shoot_tick()
     }
     g_in_tick = true;
 
+    // nettoge.com: the crash report is written by ntg_log.cc (ntg_debug.log and
+    // ntg_crash.dmp). The filter of this file replaced it after the first tick,
+    // so it is no longer installed.
 #ifdef _WIN32
-    static bool installed = false;
-    if (!installed) {
-        installed = true;
-        SetUnhandledExceptionFilter(crash_filter);
-    }
+    (void)crash_filter;
 #endif
 
     unsigned int now = SDL_GetTicks();

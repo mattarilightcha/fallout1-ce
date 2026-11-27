@@ -1,4 +1,5 @@
 #include "game/game.h"
+#include "ntg_log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -134,6 +135,9 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
     }
 
     gconfig_init(isMapper, argc, argv);
+
+    // nettoge.com: log level and the setup (ntg_log.h).
+    ntg_log_config();
 
     game_in_mapper = isMapper;
 

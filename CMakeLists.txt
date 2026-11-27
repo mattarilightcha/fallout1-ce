@@ -256,6 +256,8 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/plib/gnw/svga_types.h"
     "src/plib/gnw/svga.cc"
     "src/plib/gnw/svga.h"
+    "src/ntg_log.cc"
+    "src/ntg_log.h"
     "src/ntg_shoot.cc"
     "src/ntg_shoot.h"
     "src/plib/gnw/jtext.cc"
@@ -364,6 +366,11 @@ endif()
 
 add_subdirectory("third_party/adecode")
 target_link_libraries(${EXECUTABLE_NAME} adecode::adecode)
+
+# nettoge.com: call stack and minidump of the crash report (src/ntg_log.cc)
+if(WIN32)
+    target_link_libraries(${EXECUTABLE_NAME} dbghelp)
+endif()
 
 add_subdirectory("third_party/fpattern")
 target_link_libraries(${EXECUTABLE_NAME} fpattern::fpattern)

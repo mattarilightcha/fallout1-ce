@@ -1,4 +1,5 @@
 #include "game/display.h"
+#include "plib/gnw/jtext.h"
 
 #include <string.h>
 
@@ -212,6 +213,53 @@ void display_print(char* str)
             lastTime = now;
             gsound_play_sfx_file("monitor");
         }
+    }
+
+    // nettoge.com: Japanese line breaking (kinsoku, no spaces needed). The
+    // loops below only break at spaces: a long Japanese message stayed on one
+    // line, was cut at 79 bytes (maybe inside a character) and at the frame.
+    if (jtext_active() && *str != '\0') {
+        const char* p = str;
+        while (*p != '\0') {
+            char* temp = disp_str[disp_start];
+            int capacity = DISPLAY_MONITOR_LINE_LENGTH - 1;
+            if (knob != '\0') {
+                *temp++ = knob;
+                capacity -= 1;
+            }
+
+            int next;
+            int length = jtext_fit(p, DISPLAY_MONITOR_WIDTH - max_disp_ptr - knobWidth, &next);
+            if (next <= 0) {
+                unsigned int cp;
+                next = jtext_decode(p, &cp);
+                length = next;
+            }
+            if (length > capacity) {
+                // keep whole UTF-8 characters
+                length = capacity;
+                while (length > 0 && ((unsigned char)p[length] & 0xC0) == 0x80) {
+                    length--;
+                }
+                if (length <= 0) {
+                    length = capacity;
+                }
+                next = length;
+            }
+
+            memcpy(temp, p, length);
+            temp[length] = '\0';
+            disp_start = (disp_start + 1) % max_ptr;
+
+            knob = '\0';
+            knobWidth = 0;
+            p += next;
+        }
+
+        text_font(oldFont);
+        disp_curr = disp_start;
+        display_redraw();
+        return;
     }
 
     // TODO: Refactor these two loops.

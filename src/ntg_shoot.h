@@ -23,6 +23,8 @@
 //   map <name> [elev] [tile]   go to a map (e.g. SHADYW.MAP)
 //   tp <tile>             move the player
 //   talk <name>           walk to the critter and talk
+//   print <text>          a line in the message window
+//   crash                 crash on purpose (test of the crash report)
 //   quit
 
 #ifndef FALLOUT_NTG_SHOOT_H_

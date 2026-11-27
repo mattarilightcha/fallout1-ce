@@ -1,4 +1,5 @@
 #include "game/map.h"
+#include "ntg_log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -861,6 +862,10 @@ int map_load(char* file_name)
 
     compat_strupr(file_name);
 
+    // nettoge.com
+    ntg_log_ctx_map(file_name);
+    ntg_log(NTG_LOG_INFO, "map", "load %s", file_name);
+
     rc = -1;
 
     extension = strstr(file_name, ".MAP");
@@ -891,6 +896,13 @@ int map_load(char* file_name)
             strcpy(map_data.name, file_name);
             obj_dude->data.critter.combat.whoHitMe = NULL;
         }
+    }
+
+    // nettoge.com
+    if (rc != 0) {
+        ntg_log(NTG_LOG_ERR, "map", "load of %s FAILED (rc %d)", file_name, rc);
+    } else {
+        ntg_log(NTG_LOG_INFO, "map", "loaded %s", file_name);
     }
 
     return rc;

@@ -1,4 +1,5 @@
 #include "game/scripts.h"
+#include "ntg_log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1093,6 +1094,7 @@ int exec_script_proc(int sid, int action)
         script->program = loadProgram(name);
         if (script->program == NULL) {
             debug_printf("\nError: exec_script_proc: script load failed!");
+            ntg_log(NTG_LOG_ERR, "script", "load failed: %s.int (scripts.lst line %d), action %d", name, script->scr_script_idx + 1, action);
             return -1;
         }
 
@@ -1108,6 +1110,9 @@ int exec_script_proc(int sid, int action)
     if ((program->flags & 0x0124) != 0) {
         return 0;
     }
+
+    // nettoge.com: for the log and the crash report
+    ntg_log_ctx_script(program->name, action);
 
     int proc = script->procs[action];
     if (proc == 0) {
@@ -2543,6 +2548,7 @@ char* scr_get_msg_str_speech(int messageListId, int messageId, int a3)
     MessageList* messageList;
     if (scr_get_dialog_msg_file(messageListId, &messageList) == -1) {
         debug_printf("\nERROR: message_str: can't find message file: List: %d!", messageListId);
+        ntg_log(NTG_LOG_ERR, "script", "message file of list %d could not be read (script %s asked for number %d)", messageListId, ntg_log_ctx_script_name(), messageId);
         return NULL;
     }
 
@@ -2554,6 +2560,7 @@ char* scr_get_msg_str_speech(int messageListId, int messageId, int a3)
     messageListItem.num = messageId;
     if (!message_search(messageList, &messageListItem)) {
         debug_printf("\nError: can't find message: List: %d, Num: %d!", messageListId, messageId);
+        ntg_log(NTG_LOG_ERR, "script", "number %d is not in %s (list %d), asked by script %s -> \"Error\" is shown", messageId, message_ntg_path(messageList), messageListId, ntg_log_ctx_script_name());
         return err_str;
     }
 

@@ -1,9 +1,13 @@
 #include "game/message.h"
+#include "ntg_log.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <map>
+#include <string>
 
 #include "game/gconfig.h"
 #include "game/roll.h"
@@ -118,6 +122,19 @@ void exit_message()
     bad_total = 0;
 }
 
+// nettoge.com: which file a list was read from, for the log.
+static std::map<MessageList*, std::string>& ntg_msg_paths()
+{
+    static std::map<MessageList*, std::string> paths;
+    return paths;
+}
+
+const char* message_ntg_path(MessageList* messageList)
+{
+    auto it = ntg_msg_paths().find(messageList);
+    return it != ntg_msg_paths().end() ? it->second.c_str() : "(unknown file)";
+}
+
 // 0x4766BC
 bool message_init(MessageList* messageList)
 {
@@ -151,6 +168,7 @@ bool message_exit(MessageList* messageList)
     }
 
     messageList->entries_num = 0;
+    ntg_msg_paths().erase(messageList);
 
     if (messageList->entries != NULL) {
         mem_free(messageList->entries);
@@ -198,8 +216,12 @@ bool message_load(MessageList* messageList, const char* path)
     }
 
     if (file_ptr == NULL) {
+        ntg_log(NTG_LOG_INFO, "msg", "not found: %s (language %s, and english)", path, language);
         return false;
     }
+
+    ntg_log_ctx_msg(localized_path);
+    ntg_msg_paths()[messageList] = localized_path;
 
     entry.num = 0;
     entry.audio = audio;
@@ -240,6 +262,14 @@ err:
 
     if (!success) {
         debug_printf("Error loading message file %s at offset %x.", localized_path, db_ftell(file_ptr));
+    }
+
+    // nettoge.com
+    if (success) {
+        ntg_log(NTG_LOG_INFO, "msg", "read %s: %d lines", localized_path, messageList->entries_num);
+    } else {
+        ntg_log(NTG_LOG_ERR, "msg", "BROKEN FILE %s: stopped after %d lines (last number %d), offset 0x%x. Check the braces around there.",
+            localized_path, messageList->entries_num, entry.num, (unsigned)db_ftell(file_ptr));
     }
 
     db_fclose(file_ptr);
@@ -497,6 +527,7 @@ char* getmsg(MessageList* msg, MessageListItem* entry, int num)
 
     if (!message_search(msg, entry)) {
         entry->text = message_error_str;
+        ntg_log(NTG_LOG_ERR, "msg", "getmsg: number %d is not in %s -> \"Error\" is shown", num, message_ntg_path(msg));
         debug_printf("\n ** String not found @ getmsg(), MESSAGE.C **\n");
     }
 

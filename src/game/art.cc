@@ -1,4 +1,5 @@
 #include "game/art.h"
+#include "ntg_log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -389,6 +390,11 @@ Art* art_ptr_lock(int fid, CacheEntry** handlePtr)
 
     Art* art = NULL;
     cache_lock(&art_cache, fid, (void**)&art, handlePtr);
+    // nettoge.com
+    if (art == NULL && ntg_log_level() >= NTG_LOG_ERR) {
+        char* name = art_get_name(fid);
+        ntg_log(NTG_LOG_ERR, "art", "not loaded: fid 0x%08X %s", fid, name != NULL ? name : "(no name)");
+    }
     return art;
 }
 

@@ -25,6 +25,8 @@ void exit_message();
 bool message_init(MessageList* msg);
 bool message_exit(MessageList* msg);
 bool message_load(MessageList* msg, const char* path);
+// nettoge.com: the file a list was read from (for the log)
+const char* message_ntg_path(MessageList* msg);
 bool message_search(MessageList* msg, MessageListItem* entry);
 bool message_make_path(char* dest, size_t size, const char* path);
 char* getmsg(MessageList* msg, MessageListItem* entry, int num);

@@ -1,4 +1,5 @@
 #include "game/inventry.h"
+#include "plib/gnw/jtext.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -3091,6 +3092,43 @@ void inven_display_msg(char* string)
     unsigned char* windowBuffer = win_get_buf(i_wid);
     windowBuffer += 499 * 44 + 297;
 
+    // nettoge.com: Japanese line breaking (kinsoku, no spaces needed). The loop
+    // below only breaks at spaces, so a Japanese description stayed on one
+    // line and was cut at the frame.
+    if (jtext_active()) {
+        const char* p = string;
+        int rowHeight = text_height();
+        while (p != NULL && *p != '\0') {
+            inven_display_msg_line += 1;
+            // the frame is 188 px high
+            if ((inven_display_msg_line + 1) * rowHeight > 188) {
+                debug_printf("\nError: inven_display_msg: out of bounds!");
+                break;
+            }
+
+            int next;
+            int length = jtext_fit(p, 152, &next);
+            if (next <= 0) {
+                unsigned int cp;
+                next = jtext_decode(p, &cp);
+                length = next;
+            }
+
+            char line[256];
+            if (length > (int)sizeof(line) - 1) {
+                length = (int)sizeof(line) - 1;
+            }
+            memcpy(line, p, length);
+            line[length] = '\0';
+
+            text_to_buf(windowBuffer + 499 * inven_display_msg_line * rowHeight, line, 152, 499, colorTable[992]);
+            p += next;
+        }
+
+        text_font(oldFont);
+        return;
+    }
+
     char* c = string;
     while (c != NULL && *c != '\0') {
         inven_display_msg_line += 1;
@@ -3200,12 +3238,18 @@ void inven_obj_examine_func(Object* critter, Object* item)
     int lineHeight = text_height();
 
     // Draw separator.
+    // nettoge.com: the line under the name follows the rows the name took (a
+    // Japanese name can take two) and sits in the middle of the blank row.
+    int separatorY = 3 * lineHeight / 2 + 49;
+    if (jtext_active()) {
+        separatorY = 44 + inven_display_msg_line * lineHeight + lineHeight / 2;
+    }
     draw_line(windowBuffer,
         499,
         297,
-        3 * lineHeight / 2 + 49,
+        separatorY,
         440,
-        3 * lineHeight / 2 + 49,
+        separatorY,
         colorTable[992]);
 
     // Examine item.
